@@ -70,7 +70,7 @@ stick gs@GameState { current_buy_in } = [ toBet | toBet < stack `div` 6 ]
 highBeforeFlop :: GameState -> Maybe Int
 highBeforeFlop gs@GameState { current_buy_in, community_cards, minimum_raise } =
   [ max toBet minimum_raise | highCard && beforeFlop ]
-  where toBet = min (current_buy_in - bet) (stack `div` 2)
+  where toBet = min (current_buy_in - bet) (stack `div` 4)
         Player { bet, stack, hole_cards } = getUs gs
         highCard = any (\ x -> rank x `elem` [J, Q, K, A]) hole_cards
         beforeFlop = community_cards == []
@@ -134,9 +134,9 @@ instance FromJSON Card where
   parseJSON (Object v) = Card <$> v .: "rank" <*> v .: "suit"
   parseJSON _          = error "Not a valid card!"
 
-data Rank = N Int | K | Q | J | A deriving (Show, Eq)
+data Rank = N Int | J | Q | K | A deriving (Show, Eq, Ord)
 
-data Suit = S | H | D | C deriving (Show, Eq)
+data Suit = S | H | D | C deriving (Show, Eq, Ord)
 
 instance FromJSON Rank where
   parseJSON (String "J") = return J
