@@ -43,7 +43,7 @@ multiple strats gs = case mapMaybe ($ gs) strats of
 tryCheck :: (GameState -> Int) -> GameState -> Int
 tryCheck f gs@(GameState { current_buy_in })
   | current_buy_in == 0 = 0
-  | otherwise = undefined
+  | otherwise = f gs
 
 -- | Bets all in if we have a pair, half otherwise?
 havePair :: GameState -> Maybe Int
