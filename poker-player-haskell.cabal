@@ -14,6 +14,8 @@ executable poker-player-haskell
   ghc-options:        -O2 -Wall -threaded
   build-depends:      base,
                       aeson,
+                      lens,
+                      lens-aeson,
                       bytestring,
                       http-types,
                       text,

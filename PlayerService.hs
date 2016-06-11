@@ -1,14 +1,18 @@
-import Control.Applicative ((<$>))
-import Data.Aeson (eitherDecode', Object)
-import Data.ByteString.Lazy (append, fromStrict)
-import Data.ByteString.Lazy.Char8 (pack)
-import Network.Wai (Application, requestMethod, responseLBS)
-import Network.Wai.Parse (parseRequestBody, lbsBackEnd)
-import Network.Wai.Handler.Warp (run)
-import Network.HTTP.Types (hServer, hContentType, status200, status400, methodPost)
-import System.Environment (lookupEnv)
+module Main where
 
-import Player
+import           Control.Applicative        ((<$>))
+import           Data.Aeson                 (Object, eitherDecode')
+import           Data.ByteString.Lazy       (append, fromStrict)
+import           Data.ByteString.Lazy.Char8 (pack)
+import           Network.HTTP.Types         (hContentType, hServer, methodPost,
+                                             status200, status400)
+import           Network.Wai                (Application, requestMethod,
+                                             responseLBS)
+import           Network.Wai.Handler.Warp   (run)
+import           Network.Wai.Parse          (lbsBackEnd, parseRequestBody)
+import           System.Environment         (lookupEnv)
+
+import           Player
 
 
 main :: IO ()
