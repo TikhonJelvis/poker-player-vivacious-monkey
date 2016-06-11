@@ -25,6 +25,7 @@ betRequest obj = case fromJSON (Object obj) of
           Error msg  -> putStrLn msg >> return 0
 
 strats = [ pocketPair
+         , seeFlush
          , seePair
          , highBeforeFlop
          -- , highCard
@@ -79,6 +80,14 @@ seePair gs@GameState { community_cards } = [ allIn gs | havePair ]
   where havePair = List.any (\ (a, b) -> rank a == rank b) allPairs
         allPairs = (,) <$> hole_cards us <*> community_cards 
         us = getUs gs
+
+seeFlush :: GameState -> Maybe Int
+seeFlush gs@GameState { community_cards } =
+  [ allIn gs | haveFlush ]
+  where haveFlush = suit c_1 == suit c_2 && length sameSuit >= 3
+        sameSuit = filter ((== suit c_1) . suit) community_cards
+        us@Player { hole_cards = [c_1, c_2] } = getUs gs
+
 
 
 data GameState = GameState { players         :: [Player]
