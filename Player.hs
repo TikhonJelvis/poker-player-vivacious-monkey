@@ -49,7 +49,7 @@ tryCheck f gs@(GameState { current_buy_in })
   | otherwise = f gs
 
 allIn :: GameState -> Int
-allIn gs = stack (getUs gs) - 20
+allIn gs = stack (getUs gs) - (2 * small_blind gs)
 
 -- | Bets all in if we have a pair, half otherwise?
 pocketPair :: GameState -> Maybe Int
