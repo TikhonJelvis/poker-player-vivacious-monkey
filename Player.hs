@@ -10,13 +10,16 @@ import Data.Text (unpack)
 
 import qualified Data.ByteString.Lazy as LBS
 
+import Text.Printf (printf)
+
 
 version :: String
 version = "Default Haskell folding player"
 
 betRequest :: JS.Object -> IO Int
 betRequest obj = case fromJSON (Object obj) of
-          Success gs -> return $ current_buy_in gs
+          Success gs -> let bet = current_buy_in gs in
+                        printf "Betting %d\n." bet >> return bet
           Error msg  -> putStrLn msg >> return 0
 
 showdown :: JS.Object -> IO ()
