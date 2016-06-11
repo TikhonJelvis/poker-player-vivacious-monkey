@@ -1,18 +1,18 @@
 {-# LANGUAGE MonadComprehensions #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 module Player where
 
-import Control.Lens
+import           Control.Lens
 
-import Data.Aeson as JS
-import Data.Aeson.Lens
-import qualified Data.List as List
-import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Text (unpack)
+import           Data.Aeson           as JS
+import           Data.Aeson.Lens
+import qualified Data.List            as List
+import           Data.Maybe           (fromMaybe, mapMaybe)
+import           Data.Text            (unpack)
 
 import qualified Data.ByteString.Lazy as LBS
 
-import Text.Printf (printf)
+import           Text.Printf          (printf)
 
 
 version :: String
@@ -23,10 +23,12 @@ betRequest obj = case fromJSON (Object obj) of
           Success gs -> let bet = tryCheck (multiple strats) gs in
                         printf "Betting %d\n." bet >> return bet
           Error msg  -> putStrLn msg >> return 0
-  where strats = [ havePair
-                 , highCard
-                 , stick
-                 ]
+
+strats = [ pocketPair
+         , seePair
+         -- , highCard
+         , stick
+         ]
 
 showdown :: JS.Object -> IO ()
 showdown gameState = return ()
@@ -46,8 +48,8 @@ tryCheck f gs@(GameState { current_buy_in })
   | otherwise = f gs
 
 -- | Bets all in if we have a pair, half otherwise?
-havePair :: GameState -> Maybe Int
-havePair gs = [ stack (getUs gs) | rank c_1 == rank c_2 ]
+pocketPair :: GameState -> Maybe Int
+pocketPair gs = [ stack (getUs gs) | rank c_1 == rank c_2 ]
   where [c_1, c_2] = hole_cards (getUs gs)
 
 highCard :: GameState -> Maybe Int
@@ -58,14 +60,20 @@ highCard gs = [ stack (getUs gs) `div` 4 | high c_1 || high c_2 ]
 stick :: GameState -> Maybe Int
 stick gs@GameState { current_buy_in } = [ current_buy_in | current_buy_in < stack `div` 10 ]
   where Player { stack } = getUs gs
-        
 
-data GameState = GameState { players :: [Player]
-                           , round :: Int
-                           , pot :: Int
-                           , small_blind :: Int
+seePair :: GameState -> Maybe Int
+seePair gs@GameState { community_cards } = [ stack us | havePair ]
+  where havePair = List.any (\ (a, b) -> rank a == rank b) allPairs
+        allPairs = (,) <$> hole_cards us <*> community_cards 
+        us = getUs gs
+
+
+data GameState = GameState { players         :: [Player]
+                           , round           :: Int
+                           , pot             :: Int
+                           , small_blind     :: Int
                            , community_cards :: [Card]
-                           , current_buy_in :: Int
+                           , current_buy_in  :: Int
                            } deriving (Show, Eq)
 
 instance FromJSON GameState where
@@ -77,9 +85,9 @@ instance FromJSON GameState where
                                    <*> v .: "current_buy_in"
   parseJSON _          = error "Not a valid game!"
 
-data Player = Player { name :: String
-                     , status :: String
-                     , stack :: Int
+data Player = Player { name       :: String
+                     , status     :: String
+                     , stack      :: Int
                      , hole_cards :: [Card]
                      } deriving (Show, Eq)
 
@@ -106,11 +114,11 @@ instance FromJSON Rank where
   parseJSON (String "K") = return K
   parseJSON (String "A") = return A
   parseJSON (String n)   = return . N . read $ unpack n
-  parseJSON _ = error "Not a valid rank!" 
+  parseJSON _ = error "Not a valid rank!"
 
 instance FromJSON Suit where
   parseJSON (String "spades")   = return S
   parseJSON (String "hearts")   = return H
   parseJSON (String "diamonds") = return D
   parseJSON (String "clubs")    = return C
-  parseJSON _ = error "Not a valid suit!" 
+  parseJSON _ = error "Not a valid suit!"
