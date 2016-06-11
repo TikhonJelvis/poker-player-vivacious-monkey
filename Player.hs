@@ -15,11 +15,28 @@ version :: String
 version = "Default Haskell folding player"
 
 betRequest :: JS.Object -> IO Int
-betRequest obj = return current_buy_in
-  where Success (GameState { current_buy_in }) = fromJSON (Object obj)
+betRequest obj = return 1000
+  -- where gs = fromJSON (Object obj)
 
 showdown :: JS.Object -> IO ()
 showdown gameState = return ()
+
+getUs :: GameState -> Player
+getUs GameState { players } =
+  let Just us = List.find (\ x -> name x == "Vivacious Monkey") players in us
+
+tryCheck :: (GameState -> Int) -> GameState -> Int
+tryCheck f gs@(GameState { current_buy_in })
+  | current_buy_in == 0 = 0
+  | otherwise = undefined
+
+-- | Bets all in if we have a pair, half otherwise?
+havePair :: GameState -> Int
+havePair gs
+  | rank c_1 == rank c_2 = allIn
+  | otherwise            = allIn `div` 2
+  where [c_1, c_2] = hole_cards (getUs gs)
+        allIn = stack (getUs gs)
 
 data GameState = GameState { players :: [Player]
                            , round :: Int
