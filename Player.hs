@@ -48,9 +48,12 @@ tryCheck f gs@(GameState { current_buy_in })
   | current_buy_in == 0 = 0
   | otherwise = f gs
 
+allIn :: GameState -> Int
+allIn gs = stack (getUs gs) - 20
+
 -- | Bets all in if we have a pair, half otherwise?
 pocketPair :: GameState -> Maybe Int
-pocketPair gs = [ stack (getUs gs) | rank c_1 == rank c_2 ]
+pocketPair gs = [ allIn gs | rank c_1 == rank c_2 ]
   where [c_1, c_2] = hole_cards (getUs gs)
 
 highCard :: GameState -> Maybe Int
@@ -72,7 +75,7 @@ highBeforeFlop gs@GameState { current_buy_in, community_cards, minimum_raise } =
         beforeFlop = community_cards == []
 
 seePair :: GameState -> Maybe Int
-seePair gs@GameState { community_cards } = [ stack us | havePair ]
+seePair gs@GameState { community_cards } = [ allIn gs | havePair ]
   where havePair = List.any (\ (a, b) -> rank a == rank b) allPairs
         allPairs = (,) <$> hole_cards us <*> community_cards 
         us = getUs gs
