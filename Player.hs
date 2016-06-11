@@ -69,7 +69,7 @@ stick gs@GameState { current_buy_in } = [ toBet | toBet < stack `div` 6 ]
 
 highBeforeFlop :: GameState -> Maybe Int
 highBeforeFlop gs@GameState { current_buy_in, community_cards, minimum_raise } =
-  [ max toBet minimum_raise | highCard && beforeFlop ]
+  [ toBet | highCard && beforeFlop ]
   where toBet = min (current_buy_in - bet) (stack `div` 4)
         Player { bet, stack, hole_cards } = getUs gs
         highCard = any (\ x -> rank x `elem` [J, Q, K, A]) hole_cards
