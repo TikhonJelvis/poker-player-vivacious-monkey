@@ -15,8 +15,9 @@ version :: String
 version = "Default Haskell folding player"
 
 betRequest :: JS.Object -> IO Int
-betRequest obj = return 1000
-  -- where gs = fromJSON (Object obj)
+betRequest obj = case fromJSON (Object obj) of
+          Success gs -> return $ current_buy_in gs
+          Error msg  -> putStrLn msg >> return 0
 
 showdown :: JS.Object -> IO ()
 showdown gameState = return ()
