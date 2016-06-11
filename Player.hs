@@ -6,6 +6,7 @@ import Control.Lens
 import Data.Aeson as JS
 import Data.Aeson.Lens
 import qualified Data.List as List
+import Data.Maybe (fromMaybe)
 import Data.Text (unpack)
 
 import qualified Data.ByteString.Lazy as LBS
@@ -66,7 +67,8 @@ data Player = Player { name :: String
                      } deriving (Show, Eq)
 
 instance FromJSON Player where
-  parseJSON (Object v) = Player <$> v .: "name" <*> v .: "status" <*> v .: "stack" <*> v .: "hole_cards"
+  parseJSON (Object v) = Player <$> v .: "name" <*> v .: "status" <*> v .: "stack" <*> hole_cards
+    where hole_cards =  fromMaybe [] <$> (v .:? "hole_cards")
   parseJSON _          = error "Not a valid player!"
 
 data Card = Card { rank :: Rank
