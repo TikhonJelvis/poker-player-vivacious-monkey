@@ -1,3 +1,4 @@
+{-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Player where
 
@@ -6,7 +7,7 @@ import Control.Lens
 import Data.Aeson as JS
 import Data.Aeson.Lens
 import qualified Data.List as List
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (unpack)
 
 import qualified Data.ByteString.Lazy as LBS
@@ -19,9 +20,12 @@ version = "Default Haskell folding player"
 
 betRequest :: JS.Object -> IO Int
 betRequest obj = case fromJSON (Object obj) of
-          Success gs -> let bet = current_buy_in gs in
+          Success gs -> let bet = tryCheck (multiple strats) gs in
                         printf "Betting %d\n." bet >> return bet
           Error msg  -> putStrLn msg >> return 0
+  where strats = [ havePair
+                 , highCard
+                 ]
 
 showdown :: JS.Object -> IO ()
 showdown gameState = return ()
@@ -30,18 +34,25 @@ getUs :: GameState -> Player
 getUs GameState { players } =
   let Just us = List.find (\ x -> name x == "Vivacious Monkey") players in us
 
+multiple :: [GameState -> Maybe Int] -> GameState -> Int
+multiple strats gs = case mapMaybe ($ gs) strats of
+  (res : _) -> res
+  []        -> 0
+
 tryCheck :: (GameState -> Int) -> GameState -> Int
 tryCheck f gs@(GameState { current_buy_in })
   | current_buy_in == 0 = 0
   | otherwise = undefined
 
 -- | Bets all in if we have a pair, half otherwise?
-havePair :: GameState -> Int
-havePair gs
-  | rank c_1 == rank c_2 = allIn
-  | otherwise            = allIn `div` 2
+havePair :: GameState -> Maybe Int
+havePair gs = [ stack (getUs gs) | rank c_1 == rank c_2 ]
   where [c_1, c_2] = hole_cards (getUs gs)
-        allIn = stack (getUs gs)
+
+highCard :: GameState -> Maybe Int
+highCard gs = [ stack (getUs gs) `div` 4 | high c_1 || high c_2 ]
+  where [c_1, c_2] = hole_cards (getUs gs)
+        high Card { rank } = rank `elem` [A, K, Q, J]
 
 data GameState = GameState { players :: [Player]
                            , round :: Int
