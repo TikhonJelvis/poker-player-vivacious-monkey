@@ -26,6 +26,7 @@ betRequest obj = case fromJSON (Object obj) of
 
 strats = [ pocketPair
          , seePair
+         , highBeforeFlop
          -- , highCard
          , stick
          ]
@@ -58,8 +59,17 @@ highCard gs = [ stack (getUs gs) `div` 4 | high c_1 || high c_2 ]
         high Card { rank } = rank `elem` [A, K, Q, J]
 
 stick :: GameState -> Maybe Int
-stick gs@GameState { current_buy_in } = [ current_buy_in | current_buy_in < stack `div` 10 ]
-  where Player { stack } = getUs gs
+stick gs@GameState { current_buy_in } = [ toBet | toBet < stack `div` 6 ]
+  where Player { bet, stack } = getUs gs
+        toBet = current_buy_in - bet
+
+highBeforeFlop :: GameState -> Maybe Int
+highBeforeFlop gs@GameState { current_buy_in, community_cards, minimum_raise } =
+  [ max toBet minimum_raise | highCard && beforeFlop ]
+  where toBet = min (current_buy_in - bet) (stack `div` 2)
+        Player { bet, stack, hole_cards } = getUs gs
+        highCard = any (\ x -> rank x `elem` [J, Q, K, A]) hole_cards
+        beforeFlop = community_cards == []
 
 seePair :: GameState -> Maybe Int
 seePair gs@GameState { community_cards } = [ stack us | havePair ]
@@ -74,6 +84,7 @@ data GameState = GameState { players         :: [Player]
                            , small_blind     :: Int
                            , community_cards :: [Card]
                            , current_buy_in  :: Int
+                           , minimum_raise   :: Int
                            } deriving (Show, Eq)
 
 instance FromJSON GameState where
@@ -83,16 +94,23 @@ instance FromJSON GameState where
                                    <*> v .: "small_blind"
                                    <*> v .: "community_cards"
                                    <*> v .: "current_buy_in"
+                                   <*> minRaise
+    where minRaise = fromMaybe 0 <$> v .:? "minimum_raise"
   parseJSON _          = error "Not a valid game!"
 
 data Player = Player { name       :: String
                      , status     :: String
                      , stack      :: Int
                      , hole_cards :: [Card]
+                     , bet        :: Int
                      } deriving (Show, Eq)
 
 instance FromJSON Player where
-  parseJSON (Object v) = Player <$> v .: "name" <*> v .: "status" <*> v .: "stack" <*> hole_cards
+  parseJSON (Object v) = Player <$> v .: "name"
+                                <*> v .: "status"
+                                <*> v .: "stack"
+                                <*> hole_cards
+                                <*> v .: "bet"
     where hole_cards =  fromMaybe [] <$> (v .:? "hole_cards")
   parseJSON _          = error "Not a valid player!"
 
