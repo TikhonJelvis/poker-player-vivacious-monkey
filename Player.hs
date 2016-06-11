@@ -25,6 +25,7 @@ betRequest obj = case fromJSON (Object obj) of
           Error msg  -> putStrLn msg >> return 0
   where strats = [ havePair
                  , highCard
+                 , stick
                  ]
 
 showdown :: JS.Object -> IO ()
@@ -53,6 +54,11 @@ highCard :: GameState -> Maybe Int
 highCard gs = [ stack (getUs gs) `div` 4 | high c_1 || high c_2 ]
   where [c_1, c_2] = hole_cards (getUs gs)
         high Card { rank } = rank `elem` [A, K, Q, J]
+
+stick :: GameState -> Maybe Int
+stick gs@GameState { current_buy_in } = [ current_buy_in | current_buy_in < stack `div` 10 ]
+  where Player { stack } = getUs gs
+        
 
 data GameState = GameState { players :: [Player]
                            , round :: Int
