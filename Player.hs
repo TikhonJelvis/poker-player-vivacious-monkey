@@ -24,8 +24,8 @@ betRequest obj = case fromJSON (Object obj) of
                         printf "Betting %d\n." bet >> return bet
           Error msg  -> putStrLn msg >> return 0
 
-strats = [ pocketPair
-         , seeFlush
+strats = [ seeFlush
+         , pocketPair
          , seePair
          , highBeforeFlop
          -- , highCard
@@ -54,8 +54,9 @@ allIn gs = stack (getUs gs)
 
 -- | Bets all in if we have a pair, half otherwise?
 pocketPair :: GameState -> Maybe Int
-pocketPair gs = [ allIn gs | rank c_1 == rank c_2 ]
+pocketPair gs = [ (allIn gs `div` 2) + quality | rank c_1 == rank c_2 ]
   where [c_1, c_2] = hole_cards (getUs gs)
+        quality = floor $ fromIntegral (allIn gs `div` 2) * rankScore (rank c_1)
 
 highCard :: GameState -> Maybe Int
 highCard gs = [ stack (getUs gs) `div` 4 | high c_1 || high c_2 ]
@@ -76,10 +77,11 @@ highBeforeFlop gs@GameState { current_buy_in, community_cards, minimum_raise } =
         beforeFlop = community_cards == []
 
 seePair :: GameState -> Maybe Int
-seePair gs@GameState { community_cards } = [ allIn gs | havePair ]
+seePair gs@GameState { community_cards } = [ (allIn gs `div` 2) + quality | havePair ]
   where havePair = List.any (\ (a, b) -> rank a == rank b) allPairs
         allPairs = (,) <$> hole_cards us <*> community_cards 
-        us = getUs gs
+        us@Player { hole_cards = [c_1, c_2] } = getUs gs
+        quality = floor $ fromIntegral (allIn gs `div` 2) * rankScore (rank c_1)
 
 seeFlush :: GameState -> Maybe Int
 seeFlush gs@GameState { community_cards } =
@@ -135,6 +137,10 @@ instance FromJSON Card where
   parseJSON _          = error "Not a valid card!"
 
 data Rank = N Int | J | Q | K | A deriving (Show, Eq, Ord)
+
+rankScore :: Rank -> Double
+rankScore (N n) = (fromIntegral n - 1) / 9
+rankScore _     = 1
 
 data Suit = S | H | D | C deriving (Show, Eq, Ord)
 
